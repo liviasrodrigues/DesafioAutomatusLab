@@ -14,64 +14,103 @@ namespace GmailAccess
 {
     class Program
     {
+  
+        public static ChromeDriver driver { set; get; } 
+        public static WebDriverWait wait { set; get; } 
 
         static void Main(string[] args)
-        {
+        { 
             //Instanciando o driver
-            var driver = new ChromeDriver();
+            driver = new ChromeDriver();
+            
+            //Acessando URL do Gmail para HTML básico
+            driver.Navigate().GoToUrl(" https://mail.google.com/mail/?ui=html&zy=h");          
+            wait = new WebDriverWait(driver, TimeSpan.FromSeconds(20));
+            Console.WriteLine();
 
-            //Acessando URL do Gmail
-            driver.Navigate().GoToUrl("http://www.gmail.com");          
-            var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(30));
-
-            //Quando o campo email for visivel, entro com o email informado
-            wait.Until(ExpectedConditions.ElementIsVisible(By.Id("identifierId")));
+            //Efetuando Login
             Console.WriteLine("Informe seu Email:");
             var Email = Console.ReadLine();
-                   
-            var loginBox = driver.FindElement(By.Id("identifierId"));
-            loginBox.SendKeys(Email);
+            Console.WriteLine("Informe sua Senha:");
+            var Password = Console.ReadLine();
+
+            Login(Email, Password);
+
+            //Le e envia mensagem
+            ReadMessage();
+            SendMessage(Email);
+                                           
+        }
+
+        private static void Login(string p_Email, string p_Password)
+        {
+            Console.WriteLine();
+
+            //Quando o campo email for visivel, entro com o email informado    
+            wait.Until(ExpectedConditions.ElementIsVisible(By.Id(Resources.LOGIN_ID)));
+            var loginBox = driver.FindElement(By.Id(Resources.LOGIN_ID));
+            loginBox.SendKeys(p_Email);
             loginBox.SendKeys(Keys.Enter);
 
             //Quando o campo senha for visivel, entro com o a senha informada
-            wait.Until(ExpectedConditions.ElementIsVisible(By.Id("password")));
-            Console.WriteLine("Informe sua Senha:");
-            var Password = Console.ReadLine();        
-
-            var pwBox = driver.FindElement(By.Name("password"));
-            pwBox.SendKeys(Password);
+            wait.Until(ExpectedConditions.ElementIsVisible(By.Id(Resources.PASSWORD_ID)));         
+            var pwBox = driver.FindElement(By.Name(Resources.PASSWORD_ID));
+            pwBox.SendKeys(p_Password);
             pwBox.SendKeys(Keys.Enter);
-
-            //Quando a tela for carregada, pego todos os emails não lidos da Caixa de Entrada
-            wait.Until(ExpectedConditions.ElementIsVisible(By.CssSelector("div.xT>div.y6>span>b")));
-            List<IWebElement> Emails = driver.FindElements(By.CssSelector("div.xT>div.y6>span>b")).ToList();
-
-            var countEmails = Emails.Count();
-
-            //Se houver email não lido, abro o primeiro email
-            if (countEmails != 0)
-            {
-               if (countEmails > 1)
-                    Console.WriteLine("Você possui " + countEmails + " novos emails");
-                else
-                    Console.WriteLine("Você possui " + countEmails + " novos emails");
-
-
-                Emails[0].Click();
-
-            } else
-            {
-                Console.WriteLine("Você não possui novos E-mails");
-            }
-
-                          
-
-            //var EmailContent = driver.FindElements(By.CssSelector("#\3a kt > div:nth-child(1)")); 
-            Console.WriteLine("Fim");
-
-         
 
         }
 
+     
+        private static void ReadMessage()
+        {
+            //Seleciono o primeiro Email da Lista
+            wait.Until(ExpectedConditions.ElementIsVisible(By.XPath(Resources.FIRST_EMAIL_XPATH)));
+            var FirstEmail = driver.FindElement(By.XPath(Resources.FIRST_EMAIL_XPATH));
+
+            Console.WriteLine();
+            Console.WriteLine("************************************************************");
+            Console.WriteLine("Lendo o Primeiro Email.. ");
+            Console.WriteLine();
+
+            //Pego o Remetente
+            var Sender = driver.FindElement(By.XPath(Resources.SENDER_XPATH));
+            Console.WriteLine("De: " + Sender.Text);
+            Console.WriteLine();
+
+            //Abro o Email        
+            FirstEmail.Click();
+
+            //Exibo a mensagem
+            wait.Until(ExpectedConditions.ElementIsVisible(By.XPath(Resources.FIRST_EMAIL_MESSAGE_XPATH)));
+            var FirstEmailMessage = driver.FindElement(By.XPath(Resources.FIRST_EMAIL_MESSAGE_XPATH));
+            Console.WriteLine(FirstEmailMessage.Text);
+        }
+
+        private static void SendMessage(string p_email)
+        {
+
+            Console.WriteLine();
+            Console.WriteLine("************************************************************");
+            Console.WriteLine("Enviando Email.. ");
+
+            var newMessage = driver.FindElement(By.XPath(Resources.NEW_EMAIL_XPATH));
+            newMessage.Click();
+
+            wait.Until(ExpectedConditions.ElementIsVisible(By.Id(Resources.SEND_TO_ID)));
+            var sendTo = driver.FindElement(By.Id(Resources.SEND_TO_ID));
+            sendTo.SendKeys(p_email);
+
+            var sendSubjact = driver.FindElement(By.Name(Resources.SEND_SUBJACT_NAME));
+            sendSubjact.SendKeys("Olá");
+
+            var sendMessage = driver.FindElement(By.Name(Resources.SEND_MESSAGE_NAME));
+            sendMessage.SendKeys("Olá Mundo");
+
+            driver.FindElement(By.XPath(Resources.SEND_SUBMIT_XPATH)).Click();
+
+            Console.WriteLine();
+            Console.WriteLine("Email Enviado Com sucesso!");
+
+        }
     }
 }
